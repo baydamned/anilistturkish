@@ -56,13 +56,14 @@
             </div>
 
             <div class="relative w-full md:w-96 group">
-                <input type="text" id="searchInput" placeholder="AniList'te ara ve arşive ekle..." 
+                <input type="text" id="searchInput" placeholder="Arama yapın..." 
                     class="w-full bg-[#0b1622] border border-gray-700 rounded-full py-2 px-10 text-sm text-white focus:outline-none focus:border-blue-500 transition-all"
-                    onkeypress="if(event.key === 'Enter') searchAniListLive()">
+                    oninput="handleSearch()"
+                    onkeypress="if(event.key === 'Enter') { if(currentMode === 'SEARCH') searchAniListLive(); }">
                 <svg class="absolute left-3 top-2.5 h-4 w-4 text-gray-500 group-focus-within:text-blue-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
-                <button onclick="searchAniListLive()" class="absolute right-2 top-1.5 bg-blue-500 hover:bg-blue-600 text-white text-[10px] font-bold py-1 px-3 rounded-full transition-colors">ARA</button>
+                <button id="searchBtn" onclick="searchAniListLive()" class="absolute right-2 top-1.5 bg-blue-500 hover:bg-blue-600 text-white text-[10px] font-bold py-1 px-3 rounded-full transition-colors hidden">ARA</button>
             </div>
 
             <div class="flex items-center gap-4">
@@ -158,6 +159,7 @@
         function setMode(mode) {
             currentMode = mode;
             const input = document.getElementById('searchInput');
+            const searchBtn = document.getElementById('searchBtn');
             
             // Update UI buttons
             ['ARCHIVE', 'SEARCH', 'UPDATES'].forEach(m => {
@@ -173,12 +175,15 @@
 
             if (mode === 'ARCHIVE') {
                 input.placeholder = "Arşivimde ara (İsim, ID, Tür)...";
+                searchBtn.classList.add('hidden');
                 render();
             } else if (mode === 'SEARCH') {
                 input.placeholder = "AniList'te yeni içerik ara (İsim veya ID)...";
+                searchBtn.classList.remove('hidden');
                 document.getElementById('grid').innerHTML = '<div class="col-span-full py-20 text-center text-gray-400">Aramak için yukarıya bir isim veya ID yazın.</div>';
             } else if (mode === 'UPDATES') {
                 input.placeholder = "Güncellenenleri listele...";
+                searchBtn.classList.add('hidden');
                 fetchUpdates();
             }
         }
@@ -440,12 +445,18 @@
                 const card = document.createElement('div');
                 card.className = 'anime-card group cursor-pointer';
                 card.onclick = () => showDetails(item.filename);
+                
+                const typeColor = item.type === 'ANIME' ? 'bg-blue-500' : 'bg-purple-500';
+                
                 card.innerHTML = `
                     <div class="relative aspect-[2/3] rounded-xl overflow-hidden shadow-lg bg-[#0b1622]">
                         <img src="${item.cover_image}" class="w-full h-full object-cover" alt="${item.title_tr}" loading="lazy">
+                        <div class="absolute top-2 left-2 z-10">
+                            <span class="${typeColor} text-[9px] font-bold text-white px-2 py-0.5 rounded shadow-lg uppercase">${item.type}</span>
+                        </div>
                         <div class="overlay absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent opacity-0 transition-opacity duration-300 p-4 flex flex-col justify-end">
                             <div class="flex flex-wrap gap-1 mb-2">
-                                <span class="px-2 py-0.5 bg-blue-500 text-[10px] font-bold text-white rounded">${item.format}</span>
+                                <span class="px-2 py-0.5 bg-gray-800 text-[10px] font-bold text-white rounded">${item.format}</span>
                             </div>
                         </div>
                     </div>

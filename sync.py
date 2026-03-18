@@ -174,10 +174,10 @@ def save_to_github(data, filename, media_type):
             except:
                 index_data = []
     
-    # Mevcut kaydı güncelle veya yenisini ekle
+    # Mevcut kaydı güncelle veya yenisini ekle (ID + TYPE kontrolü)
     existing_index = -1
     for i, item in enumerate(index_data):
-        if item['id'] == data['id']:
+        if item['id'] == data['id'] and item['type'] == data['type']:
             existing_index = i
             break
             
