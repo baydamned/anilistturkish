@@ -154,16 +154,16 @@ def process_media(media):
     return processed_data
 
 def save_to_github(data, filename, media_type):
-    # Root level folders: anime/ or manga/
+    # Ana dizindeki anime/ veya manga/ klasörleri
     sub_dir = media_type.lower()
     os.makedirs(sub_dir, exist_ok=True)
     
-    # Save individual file in its folder
+    # Dosyayı ilgili klasöre kaydet
     filepath = os.path.join(sub_dir, filename)
     with open(filepath, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
     
-    # Keep index.json in data/ for the web app
+    # İndeksi güncelle (data/ klasöründe kalmalı)
     os.makedirs('data', exist_ok=True)
     index_path = os.path.join('data', 'index.json')
     index_data = []
@@ -174,6 +174,7 @@ def save_to_github(data, filename, media_type):
             except:
                 index_data = []
     
+    # Mevcut kaydı güncelle veya yenisini ekle
     existing_index = -1
     for i, item in enumerate(index_data):
         if item['id'] == data['id']:
@@ -187,9 +188,9 @@ def save_to_github(data, filename, media_type):
         'type': data['type'],
         'format': data['format'],
         'cover_image': data['cover_image'],
-        'genres': data['genres'], # Added for archive searching
+        'genres': data['genres'],
         'updated_at': data['updated_at'],
-        'filename': f"../{sub_dir}/{filename}" 
+        'filename': f"{sub_dir}/{filename}" # Basit yol: anime/dosya.json
     }
     
     if existing_index != -1:
@@ -199,7 +200,7 @@ def save_to_github(data, filename, media_type):
         
     with open(index_path, 'w', encoding='utf-8') as f:
         json.dump(index_data, f, ensure_ascii=False, indent=2)
-    print(f"Saved: {data['id']} - {data['title_tr']}")
+    print(f"Başarıyla kaydedildi: {data['title_tr']} ({sub_dir})")
 
 ID_QUERY = '''
 query ($id: Int) {

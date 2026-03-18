@@ -1,0 +1,66 @@
+name: AniList Sync & Add
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+    inputs:
+      search_term:
+        description: 'Anime/Manga name to search and add'
+        required: false
+        default: ''
+      id:
+        description: 'Anime/Manga ID to add'
+        required: false
+        default: ''
+      media_type:
+        description: 'Type of media'
+        required: true
+        default: 'ANIME'
+        type: choice
+        options:
+          - ANIME
+          - MANGA
+      rebuild:
+        description: 'Rebuild index from existing files (true/false)'
+        required: false
+        default: 'false'
+        type: boolean
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests googletrans==4.0.0-rc1 python-dotenv
+
+      - name: Run sync, search or rebuild
+        run: |
+          if [ "${{ github.event.inputs.rebuild }}" == "true" ]; then
+            python sync.py --rebuild
+          elif [ "${{ github.event.inputs.id }}" != "" ]; then
+            python sync.py --id "${{ github.event.inputs.id }}" --type "${{ github.event.inputs.media_type }}"
+          elif [ "${{ github.event.inputs.search_term }}" != "" ]; then
+            python sync.py --search "${{ github.event.inputs.search_term }}" --type "${{ github.event.inputs.media_type }}"
+          else
+            python sync.py
+          fi
+
+      - name: Commit and push changes
+        run: |
+          git config --global user.name "GitHub Action"
+          git config --global user.email "action@github.com"
+          git add data/ anime/ manga/
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Update AniList data [skip ci]" && git push)
