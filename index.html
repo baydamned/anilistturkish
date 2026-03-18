@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AniList Türkçe Arşivi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #0b1622; color: #9fadbd; font-family: 'Overpass', -apple-system, BlinkMacSystemFont, Segoe UI, Oxygen, Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif; }
+        .card { background-color: #151f2e; border-radius: 4px; overflow: hidden; transition: transform 0.2s; }
+        .card:hover { transform: scale(1.05); }
+        .btn { background-color: #3db4f2; color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <header class="max-w-6xl mx-auto mb-12 flex justify-between items-center">
+        <h1 class="text-3xl font-bold text-white">AniList <span class="text-blue-400">Türkçe</span></h1>
+        <div class="flex gap-4">
+            <button onclick="filterType('ALL')" class="text-white hover:text-blue-400">Hepsi</button>
+            <button onclick="filterType('ANIME')" class="text-white hover:text-blue-400">Anime</button>
+            <button onclick="filterType('MANGA')" class="text-white hover:text-blue-400">Manga</button>
+        </div>
+    </header>
+
+    <main id="app" class="max-w-6xl mx-auto">
+        <div id="loading" class="text-center text-2xl mt-20">Yükleniyor...</div>
+        <div id="grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6"></div>
+    </main>
+
+    <!-- Modal for details -->
+    <div id="modal" class="fixed inset-0 bg-black bg-opacity-75 hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-[#151f2e] max-w-4xl w-full max-h-[90vh] overflow-y-auto rounded-lg relative">
+            <button onclick="closeModal()" class="absolute top-4 right-4 text-white text-2xl">&times;</button>
+            <div id="modal-content" class="p-6 md:p-8"></div>
+        </div>
+    </div>
+
+    <script>
+        let allData = [];
+        let currentFilter = 'ALL';
+
+        async function init() {
+            try {
+                const response = await fetch('data/index.json');
+                allData = await response.json();
+                // Sort by updatedAt descending
+                allData.sort((a, b) => b.updated_at - a.updated_at);
+                render();
+            } catch (error) {
+                console.error('Error loading data:', error);
+                document.getElementById('loading').innerText = 'Veri bulunamadı. Lütfen sync.py dosyasını çalıştırın.';
+            }
+        }
+
+        function filterType(type) {
+            currentFilter = type;
+            render();
+        }
+
+        function render() {
+            const grid = document.getElementById('grid');
+            const loading = document.getElementById('loading');
+            loading.style.display = 'none';
+            grid.innerHTML = '';
+
+            const filtered = currentFilter === 'ALL' ? allData : allData.filter(i => i.type === currentFilter);
+
+            filtered.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'card cursor-pointer';
+                card.onclick = () => showDetails(item.filename);
+                card.innerHTML = `
+                    <img src="${item.cover_image}" class="w-full h-64 object-cover" alt="${item.title}">
+                    <div class="p-3">
+                        <h3 class="text-white font-semibold truncate text-sm">${item.title}</h3>
+                        <p class="text-xs mt-1">${item.format} • ${item.type}</p>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        async function showDetails(filename) {
+            const modal = document.getElementById('modal');
+            const content = document.getElementById('modal-content');
+            modal.classList.remove('hidden');
+            content.innerHTML = '<div class="text-center p-10">Yükleniyor...</div>';
+
+            try {
+                const response = await fetch(`data/${filename}`);
+                const data = await response.json();
+
+                content.innerHTML = `
+                    <div class="md:flex gap-8">
+                        <div class="md:w-1/3">
+                            <img src="${data.cover_image}" class="w-full rounded-lg shadow-xl" alt="${data.title_english}">
+                            ${data.trailer_link ? `
+                                <a href="${data.trailer_link}" target="_blank" class="btn block text-center mt-4">Fragmanı İzle</a>
+                            ` : ''}
+                        </div>
+                        <div class="md:w-2/3">
+                            <h2 class="text-3xl font-bold text-white mb-2">${data.title_english || data.title_romaji}</h2>
+                            <p class="text-blue-400 mb-4">${data.title_native}</p>
+                            
+                            <div class="flex flex-wrap gap-2 mb-6">
+                                ${data.genres.map(g => `<span class="bg-[#0b1622] px-3 py-1 rounded-full text-xs">${g}</span>`).join('')}
+                            </div>
+
+                            <div class="bg-[#0b1622] p-4 rounded mb-6">
+                                <h4 class="text-white font-bold mb-2">Türkçe Açıklama</h4>
+                                <p class="text-sm leading-relaxed">${data.description_tr || 'Açıklama çevrilemedi.'}</p>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div><span class="text-white font-semibold">Tür:</span> ${data.type}</div>
+                                <div><span class="text-white font-semibold">Format:</span> ${data.format}</div>
+                                <div><span class="text-white font-semibold">Durum:</span> ${data.status}</div>
+                                <div><span class="text-white font-semibold">Puan:</span> ${data.average_score}%</div>
+                                ${data.episodes ? `<div><span class="text-white font-semibold">Bölüm:</span> ${data.episodes}</div>` : ''}
+                                ${data.chapters ? `<div><span class="text-white font-semibold">Bölüm (Manga):</span> ${data.chapters}</div>` : ''}
+                            </div>
+                            
+                            <div class="mt-8">
+                                <a href="https://anilist.co/${data.type.toLowerCase()}/${data.id}" target="_blank" class="text-blue-400 hover:underline">AniList'te Görüntüle &rarr;</a>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                content.innerHTML = '<div class="text-center p-10">Hata oluştu.</div>';
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.add('hidden');
+        }
+
+        // Close modal on click outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('modal');
+            if (event.target == modal) {
+                closeModal();
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>

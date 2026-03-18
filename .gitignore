@@ -1,0 +1,12 @@
+.env
+__pycache__/
+*.pyc
+data/*.json
+!data/index.json
+# Keep index.json if you want a default state, but normally data/ is generated
+# Let's ignore everything in data/ to keep the repo clean and let Actions handle it
+data/
+node_modules/
+.venv/
+venv/
+.DS_Store
