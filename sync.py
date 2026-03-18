@@ -230,14 +230,51 @@ def get_anilist_by_id(media_id):
         return response.json()
     return None
 
+def rebuild_index():
+    print("Rebuilding index from local files...")
+    index_data = []
+    
+    for mtype in ['anime', 'manga']:
+        if os.path.exists(mtype):
+            for filename in os.listdir(mtype):
+                if filename.endswith('.json'):
+                    filepath = os.path.join(mtype, filename)
+                    try:
+                        with open(filepath, 'r', encoding='utf-8') as f:
+                            data = json.load(f)
+                            index_entry = {
+                                'id': data['id'],
+                                'title_tr': data['title_tr'],
+                                'title_original': data['title_english'] or data['title_romaji'],
+                                'type': data['type'],
+                                'format': data['format'],
+                                'cover_image': data['cover_image'],
+                                'genres': data['genres'],
+                                'updated_at': data['updated_at'],
+                                'filename': f"../{mtype}/{filename}"
+                            }
+                            index_data.append(index_entry)
+                    except Exception as e:
+                        print(f"Error reading {filepath}: {e}")
+    
+    os.makedirs('data', exist_ok=True)
+    with open(os.path.join('data', 'index.json'), 'w', encoding='utf-8') as f:
+        json.dump(index_data, f, ensure_ascii=False, indent=2)
+    print(f"Index rebuilt with {len(index_data)} items.")
+
 def main():
     parser = argparse.ArgumentParser(description='AniList Sync & Search Tool')
     parser.add_argument('--search', type=str, help='Search and add a specific title')
-    parser.add_argument('--id', type=int, help='Add a specific title by ID')
+    parser.add_argument('--id', type=str, help='Add a specific title by ID') # Changed to str to handle both
     parser.add_argument('--type', type=str, default='ANIME', choices=['ANIME', 'MANGA'], help='Media type')
     parser.add_argument('--sync', action='store_true', help='Sync recent updates')
+    parser.add_argument('--rebuild', action='store_true', help='Rebuild index from existing files')
     
     args = parser.parse_args()
+
+    if args.rebuild:
+        rebuild_index()
+        return
 
     if args.id:
         print(f"Fetching ID {args.id}...")
