@@ -59,11 +59,11 @@
                 <input type="text" id="searchInput" placeholder="Arama yapın..." 
                     class="w-full bg-[#0b1622] border border-gray-700 rounded-full py-2 px-10 text-sm text-white focus:outline-none focus:border-blue-500 transition-all"
                     oninput="handleSearch()"
-                    onkeypress="if(event.key === 'Enter') { if(currentMode === 'SEARCH') searchAniListLive(); }">
+                    onkeypress="if(event.key === 'Enter') executeSearch()">
                 <svg class="absolute left-3 top-2.5 h-4 w-4 text-gray-500 group-focus-within:text-blue-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
-                <button id="searchBtn" onclick="searchAniListLive()" class="absolute right-2 top-1.5 bg-blue-500 hover:bg-blue-600 text-white text-[10px] font-bold py-1 px-3 rounded-full transition-colors hidden">ARA</button>
+                <button id="searchBtn" onclick="executeSearch()" class="absolute right-2 top-1.5 bg-blue-500 hover:bg-blue-600 text-white text-[10px] font-bold py-1 px-3 rounded-full transition-colors">ARA</button>
             </div>
 
             <div class="flex items-center gap-4">
@@ -159,7 +159,6 @@
         function setMode(mode) {
             currentMode = mode;
             const input = document.getElementById('searchInput');
-            const searchBtn = document.getElementById('searchBtn');
             
             // Update UI buttons
             ['ARCHIVE', 'SEARCH', 'UPDATES'].forEach(m => {
@@ -175,15 +174,22 @@
 
             if (mode === 'ARCHIVE') {
                 input.placeholder = "Arşivimde ara (İsim, ID, Tür)...";
-                searchBtn.classList.add('hidden');
                 render();
             } else if (mode === 'SEARCH') {
                 input.placeholder = "AniList'te yeni içerik ara (İsim veya ID)...";
-                searchBtn.classList.remove('hidden');
-                document.getElementById('grid').innerHTML = '<div class="col-span-full py-20 text-center text-gray-400">Aramak için yukarıya bir isim veya ID yazın.</div>';
+                document.getElementById('grid').innerHTML = '<div class="col-span-full py-20 text-center text-gray-400">Aramak için yukarıya bir isim veya ID yazın ve ARA butonuna basın.</div>';
             } else if (mode === 'UPDATES') {
                 input.placeholder = "Güncellenenleri listele...";
-                searchBtn.classList.add('hidden');
+                fetchUpdates();
+            }
+        }
+
+        function executeSearch() {
+            if (currentMode === 'SEARCH') {
+                searchAniListLive();
+            } else if (currentMode === 'ARCHIVE') {
+                render();
+            } else if (currentMode === 'UPDATES') {
                 fetchUpdates();
             }
         }
