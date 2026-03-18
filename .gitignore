@@ -1,12 +1,12 @@
 .env
 __pycache__/
 *.pyc
-data/*.json
-!data/index.json
-# Keep index.json if you want a default state, but normally data/ is generated
-# Let's ignore everything in data/ to keep the repo clean and let Actions handle it
-data/
 node_modules/
 .venv/
 venv/
 .DS_Store
+
+# Data files
+# We want to keep the structure but ignore the actual JSONs if they are many
+# However, for a small archive, it's better to keep them in git.
+# Let's only ignore local environment files.

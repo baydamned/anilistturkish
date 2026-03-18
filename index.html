@@ -3,144 +3,590 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AniList Türkçe Arşivi</title>
+    <title>AniList TR Arşivi</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { background-color: #0b1622; color: #9fadbd; font-family: 'Overpass', -apple-system, BlinkMacSystemFont, Segoe UI, Oxygen, Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif; }
-        .card { background-color: #151f2e; border-radius: 4px; overflow: hidden; transition: transform 0.2s; }
-        .card:hover { transform: scale(1.05); }
-        .btn { background-color: #3db4f2; color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold; }
+        :root {
+            --bg-color: #0b1622;
+            --card-bg: #151f2e;
+            --accent: #3db4f2;
+            --text-main: #9fadbd;
+            --text-bright: #edf1f5;
+        }
+        body { 
+            background-color: var(--bg-color); 
+            color: var(--text-main); 
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+        .glass {
+            background: rgba(21, 31, 46, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .anime-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .anime-card:hover {
+            transform: translateY(-8px);
+        }
+        .anime-card:hover .overlay {
+            opacity: 1;
+        }
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg-color); }
+        ::-webkit-scrollbar-thumb { background: #35445a; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
     </style>
 </head>
-<body class="p-4 md:p-8">
-    <header class="max-w-6xl mx-auto mb-12 flex justify-between items-center">
-        <h1 class="text-3xl font-bold text-white">AniList <span class="text-blue-400">Türkçe</span></h1>
-        <div class="flex gap-4">
-            <button onclick="filterType('ALL')" class="text-white hover:text-blue-400">Hepsi</button>
-            <button onclick="filterType('ANIME')" class="text-white hover:text-blue-400">Anime</button>
-            <button onclick="filterType('MANGA')" class="text-white hover:text-blue-400">Manga</button>
-        </div>
-    </header>
+<body class="min-h-screen">
+    <!-- Navbar -->
+    <nav class="sticky top-0 z-40 glass border-b border-gray-800 px-4 py-3">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center font-bold text-white text-xl shadow-lg shadow-blue-500/20">TR</div>
+                <h1 class="text-xl font-bold text-white tracking-tight cursor-pointer" onclick="location.reload()">AniList<span class="text-blue-400">Arşivi</span></h1>
+            </div>
 
-    <main id="app" class="max-w-6xl mx-auto">
-        <div id="loading" class="text-center text-2xl mt-20">Yükleniyor...</div>
-        <div id="grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6"></div>
+            <div class="relative w-full md:w-96 group">
+                <input type="text" id="searchInput" placeholder="AniList'te ara ve arşive ekle..." 
+                    class="w-full bg-[#0b1622] border border-gray-700 rounded-full py-2 px-10 text-sm text-white focus:outline-none focus:border-blue-500 transition-all"
+                    onkeypress="if(event.key === 'Enter') searchAniListLive()">
+                <svg class="absolute left-3 top-2.5 h-4 w-4 text-gray-500 group-focus-within:text-blue-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <button onclick="searchAniListLive()" class="absolute right-2 top-1.5 bg-blue-500 hover:bg-blue-600 text-white text-[10px] font-bold py-1 px-3 rounded-full transition-colors">ARA</button>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <div class="flex items-center gap-2 bg-[#151f2e] p-1 rounded-full border border-gray-800">
+                <button onclick="setMode('ARCHIVE')" id="mode-ARCHIVE" class="px-4 py-1.5 rounded-full text-xs font-semibold transition-all bg-blue-500 text-white">Arşivim</button>
+                <button onclick="setMode('SEARCH')" id="mode-SEARCH" class="px-4 py-1.5 rounded-full text-xs font-semibold transition-all hover:text-white">Yeni Bul</button>
+                <button onclick="setMode('UPDATES')" id="mode-UPDATES" class="px-4 py-1.5 rounded-full text-xs font-semibold transition-all hover:text-white">Güncellenenler</button>
+            </div>
+
+            <div class="flex items-center gap-2 bg-[#151f2e] p-1 rounded-full border border-gray-800">
+                <button onclick="filterType('ALL')" id="btn-ALL" class="px-4 py-1.5 rounded-full text-xs font-semibold transition-all bg-gray-800 text-white">Hepsi</button>
+                <button onclick="filterType('ANIME')" id="btn-ANIME" class="px-4 py-1.5 rounded-full text-xs font-semibold transition-all hover:text-white">Anime</button>
+                <button onclick="filterType('MANGA')" id="btn-MANGA" class="px-4 py-1.5 rounded-full text-xs font-semibold transition-all hover:text-white">Manga</button>
+            </div>
+                <button onclick="toggleSettings()" class="text-gray-400 hover:text-white transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="fixed inset-0 z-50 hidden bg-black/80 flex items-center justify-center px-4">
+        <div class="bg-[#151f2e] w-full max-w-md rounded-2xl p-6 shadow-2xl border border-gray-800">
+            <h2 class="text-xl font-bold text-white mb-4">GitHub Ayarları</h2>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">GitHub PAT (Token)</label>
+                    <input type="password" id="patInput" class="w-full bg-[#0b1622] border border-gray-700 rounded-lg py-2 px-3 text-white text-sm focus:border-blue-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Repo (Kullanıcı/Repo)</label>
+                    <input type="text" id="repoInput" placeholder="örn: kullanıcı/anilist-tr" class="w-full bg-[#0b1622] border border-gray-700 rounded-lg py-2 px-3 text-white text-sm focus:border-blue-500 outline-none">
+                </div>
+                <div class="flex gap-3 mt-6">
+                    <button onclick="saveSettings()" class="flex-grow bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 rounded-lg transition-colors">KAYDET</button>
+                    <button onclick="toggleSettings()" class="px-4 bg-gray-800 hover:bg-gray-700 text-white font-bold py-2 rounded-lg transition-colors">KAPAT</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 py-8">
+        <div id="loading" class="flex flex-col items-center justify-center min-h-[60vh]">
+            <div class="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+            <p class="mt-4 text-gray-500 font-medium">Veriler yükleniyor...</p>
+        </div>
+        
+        <div id="grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6"></div>
     </main>
 
-    <!-- Modal for details -->
-    <div id="modal" class="fixed inset-0 bg-black bg-opacity-75 hidden z-50 flex items-center justify-center p-4">
-        <div class="bg-[#151f2e] max-w-4xl w-full max-h-[90vh] overflow-y-auto rounded-lg relative">
-            <button onclick="closeModal()" class="absolute top-4 right-4 text-white text-2xl">&times;</button>
-            <div id="modal-content" class="p-6 md:p-8"></div>
+    <!-- Details Modal -->
+    <div id="modal" class="fixed inset-0 z-50 hidden bg-black/90 backdrop-blur-sm overflow-y-auto px-4 py-6 md:p-12">
+        <div class="max-w-5xl mx-auto bg-[#151f2e] rounded-2xl overflow-hidden shadow-2xl relative">
+            <button onclick="closeModal()" class="absolute top-4 right-4 z-10 w-10 h-10 flex items-center justify-center rounded-full bg-black/20 hover:bg-black/40 text-white transition-all">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+            <div id="modal-content"></div>
         </div>
     </div>
 
     <script>
         let allData = [];
         let currentFilter = 'ALL';
+        let currentMode = 'ARCHIVE'; // ARCHIVE, SEARCH, UPDATES
+        let searchQuery = '';
 
         async function init() {
+            // Default Repo from user input
+            const defaultRepo = 'baydamned/anilistturkish';
+            
+            if (!localStorage.getItem('gh_repo')) localStorage.setItem('gh_repo', defaultRepo);
+
             try {
                 const response = await fetch('data/index.json');
                 allData = await response.json();
-                // Sort by updatedAt descending
                 allData.sort((a, b) => b.updated_at - a.updated_at);
                 render();
             } catch (error) {
-                console.error('Error loading data:', error);
-                document.getElementById('loading').innerText = 'Veri bulunamadı. Lütfen sync.py dosyasını çalıştırın.';
+                document.getElementById('loading').innerHTML = `
+                    <div class="text-center p-8 bg-red-500/10 rounded-2xl border border-red-500/20">
+                        <p class="text-red-400 font-bold text-xl">Arşiv Henüz Boş</p>
+                        <p class="mt-2 text-gray-400">"Yeni Bul" veya "Güncellenenler" sekmesinden AniList'ten içerik ekleyin.</p>
+                    </div>
+                `;
+            }
+            // Load settings
+            document.getElementById('patInput').value = localStorage.getItem('gh_pat') || defaultPAT;
+            document.getElementById('repoInput').value = localStorage.getItem('gh_repo') || defaultRepo;
+        }
+
+        function setMode(mode) {
+            currentMode = mode;
+            const input = document.getElementById('searchInput');
+            
+            // Update UI buttons
+            ['ARCHIVE', 'SEARCH', 'UPDATES'].forEach(m => {
+                const btn = document.getElementById(`mode-${m}`);
+                if (m === mode) {
+                    btn.classList.add('bg-blue-500', 'text-white');
+                    btn.classList.remove('hover:text-white');
+                } else {
+                    btn.classList.remove('bg-blue-500', 'text-white');
+                    btn.classList.add('hover:text-white');
+                }
+            });
+
+            if (mode === 'ARCHIVE') {
+                input.placeholder = "Arşivimde ara (İsim, ID, Tür)...";
+                render();
+            } else if (mode === 'SEARCH') {
+                input.placeholder = "AniList'te yeni içerik ara (İsim veya ID)...";
+                document.getElementById('grid').innerHTML = '<div class="col-span-full py-20 text-center text-gray-400">Aramak için yukarıya bir isim veya ID yazın.</div>';
+            } else if (mode === 'UPDATES') {
+                input.placeholder = "Güncellenenleri listele...";
+                fetchUpdates();
             }
         }
 
-        function filterType(type) {
-            currentFilter = type;
-            render();
+        async function fetchUpdates() {
+            const grid = document.getElementById('grid');
+            const loading = document.getElementById('loading');
+            loading.style.display = 'flex';
+            loading.querySelector('p').innerText = 'En son güncellenenler getiriliyor...';
+            grid.innerHTML = '';
+
+            const graphqlQuery = `
+            query ($type: MediaType) {
+                Page (page: 1, perPage: 18) {
+                    media (type: $type, sort: UPDATED_AT_DESC) {
+                        id
+                        title { romaji english native }
+                        type
+                        format
+                        coverImage { large }
+                        updatedAt
+                    }
+                }
+            }`;
+
+            const variables = { type: currentFilter === 'ALL' ? undefined : currentFilter };
+
+            try {
+                const response = await fetch('https://graphql.anilist.co', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query: graphqlQuery, variables })
+                });
+                const data = await response.json();
+                renderAniListResults(data.data.Page.media);
+            } catch (error) {
+                loading.style.display = 'none';
+                grid.innerHTML = '<div class="col-span-full py-20 text-center text-red-400">Veriler alınamadı.</div>';
+            }
         }
 
-        function render() {
+        function handleSearch() {
+            searchQuery = document.getElementById('searchInput').value.toLowerCase();
+            if (currentMode === 'ARCHIVE') {
+                render();
+            } else if (currentMode === 'SEARCH' && searchQuery.length > 2) {
+                searchAniListLive();
+            }
+        }
+
+        function renderAniListResults(results) {
             const grid = document.getElementById('grid');
             const loading = document.getElementById('loading');
             loading.style.display = 'none';
             grid.innerHTML = '';
 
-            const filtered = currentFilter === 'ALL' ? allData : allData.filter(i => i.type === currentFilter);
+            if (results.length === 0) {
+                grid.innerHTML = '<div class="col-span-full py-20 text-center text-gray-400">Sonuç bulunamadı.</div>';
+                return;
+            }
 
-            filtered.forEach(item => {
+            results.forEach(item => {
+                const isAdded = allData.some(d => d.id === item.id);
                 const card = document.createElement('div');
-                card.className = 'card cursor-pointer';
-                card.onclick = () => showDetails(item.filename);
+                card.className = 'anime-card group cursor-pointer relative';
+                
+                const isId = /^\d+$/.test(document.getElementById('searchInput').value);
+                const addParam = isId ? item.id : item.title.romaji;
+                const addType = isId ? 'id' : 'title';
+
                 card.innerHTML = `
-                    <img src="${item.cover_image}" class="w-full h-64 object-cover" alt="${item.title}">
-                    <div class="p-3">
-                        <h3 class="text-white font-semibold truncate text-sm">${item.title}</h3>
-                        <p class="text-xs mt-1">${item.format} • ${item.type}</p>
+                    <div class="relative aspect-[2/3] rounded-xl overflow-hidden shadow-lg bg-[#0b1622]">
+                        <img src="${item.coverImage.large}" class="w-full h-full object-cover" alt="${item.title.romaji}" loading="lazy">
+                        <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center p-4 text-center">
+                            ${isAdded ? 
+                                '<span class="bg-green-500 text-white px-3 py-1 rounded-full text-[10px] font-bold">ARŞİVDE VAR</span>' :
+                                `<button onclick="addToRepo('${addParam}', '${item.type}', this, '${addType}')" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-full text-[10px] font-bold transition-all shadow-lg mb-2 uppercase">Arşive Ekle</button>
+                                 <p class="text-[9px] text-gray-300">Tıkla ve 2dk bekle</p>`
+                            }
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <h3 class="text-sm font-bold text-white line-clamp-2 leading-snug group-hover:text-blue-400 transition-colors">${item.title.english || item.title.romaji}</h3>
+                        <p class="text-[11px] text-gray-500 mt-1 uppercase">${item.type} • ${item.format}</p>
                     </div>
                 `;
                 grid.appendChild(card);
             });
         }
 
+        function toggleSettings() {
+            const m = document.getElementById('settingsModal');
+            m.classList.toggle('hidden');
+        }
+
+        function saveSettings() {
+            localStorage.setItem('gh_pat', document.getElementById('patInput').value);
+            localStorage.setItem('gh_repo', document.getElementById('repoInput').value);
+            toggleSettings();
+            alert('Ayarlar kaydedildi!');
+        }
+
+        async function searchAniListLive() {
+            if (currentMode !== 'SEARCH') return;
+            const query = document.getElementById('searchInput').value;
+            if (!query) return;
+
+            const grid = document.getElementById('grid');
+            const loading = document.getElementById('loading');
+            loading.style.display = 'flex';
+            loading.querySelector('p').innerText = 'AniList\'te aranıyor...';
+            grid.innerHTML = '';
+
+            const isId = /^\d+$/.test(query);
+            let graphqlQuery, variables;
+
+            if (isId) {
+                graphqlQuery = `
+                query ($id: Int) {
+                    Media (id: $id) {
+                        id
+                        title { romaji english native }
+                        type
+                        format
+                        coverImage { large }
+                    }
+                }`;
+                variables = { id: parseInt(query) };
+            } else {
+                graphqlQuery = `
+                query ($search: String, $type: MediaType) {
+                    Page (page: 1, perPage: 12) {
+                        media (search: $search, type: $type) {
+                            id
+                            title { romaji english native }
+                            type
+                            format
+                            coverImage { large }
+                        }
+                    }
+                }`;
+                variables = { search: query, type: currentFilter === 'ALL' ? undefined : currentFilter };
+            }
+
+            try {
+                const response = await fetch('https://graphql.anilist.co', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                    body: JSON.stringify({ query: graphqlQuery, variables })
+                });
+                const data = await response.json();
+                
+                let results = [];
+                if (isId) {
+                    if (data.data.Media) results = [data.data.Media];
+                } else {
+                    results = data.data.Page.media;
+                }
+                renderAniListResults(results);
+            } catch (error) {
+                loading.style.display = 'none';
+                grid.innerHTML = '<div class="col-span-full py-20 text-center text-red-400">Arama sırasında bir hata oluştu.</div>';
+            }
+        }
+
+        async function addToRepo(value, type, btn, searchMethod = 'title') {
+            const pat = localStorage.getItem('gh_pat');
+            const repo = localStorage.getItem('gh_repo');
+
+            if (!pat || !repo) {
+                alert('Lütfen önce sağ üstteki ayarlar (çark) simgesinden GitHub Repo adını girin!');
+                toggleSettings();
+                return;
+            }
+
+            const originalText = btn.innerText;
+            btn.innerText = 'İSTEK GÖNDERİLİYOR...';
+            btn.disabled = true;
+
+            const inputs = {
+                media_type: type
+            };
+            
+            if (searchMethod === 'id') {
+                inputs.id = parseInt(value);
+                inputs.search_term = ""; // Clear search term if using ID
+            } else {
+                inputs.search_term = value;
+            }
+
+            try {
+                const response = await fetch(`https://api.github.com/repos/${repo}/actions/workflows/sync.yml/dispatches`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `token ${pat}`,
+                        'Accept': 'application/vnd.github.v3+json',
+                    },
+                    body: JSON.stringify({
+                        ref: 'main',
+                        inputs: inputs
+                    })
+                });
+
+                if (response.ok || response.status === 204) {
+                    btn.innerText = 'SIRAYA ALINDI!';
+                    btn.classList.replace('bg-blue-500', 'bg-green-600');
+                    alert('Başarılı! GitHub çeviri işlemini başlattı. 2-3 dakika içinde sayfa yenilendiğinde içerik Türkçe olarak arşivinizde görünecek.');
+                } else {
+                    const error = await response.json();
+                    throw new Error(error.message);
+                }
+            } catch (e) {
+                console.error(e);
+                alert('Hata: GitHub Action tetiklenemedi. Lütfen Token ve Repo ismini kontrol edin.');
+                btn.innerText = 'HATA!';
+                btn.disabled = false;
+            }
+        }
+
+        async function addToRepo(value, type, btn, searchMethod = 'title') {
+            const pat = localStorage.getItem('gh_pat');
+            const repo = localStorage.getItem('gh_repo');
+
+            if (!pat || !repo) {
+                alert('Lütfen önce sağ üstteki ayarlar (çark) simgesinden GitHub Repo adını girin!');
+                toggleSettings();
+                return;
+            }
+
+            const originalText = btn.innerText;
+            btn.innerText = 'İSTEK GÖNDERİLİYOR...';
+            btn.disabled = true;
+
+            const inputs = {
+                media_type: type
+            };
+            
+            if (searchMethod === 'id') {
+                inputs.id = value.toString();
+                inputs.search_term = ""; 
+            } else {
+                inputs.search_term = value;
+            }
+
+            try {
+                const response = await fetch(`https://api.github.com/repos/${repo}/actions/workflows/sync.yml/dispatches`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `token ${pat}`,
+                        'Accept': 'application/vnd.github.v3+json',
+                    },
+                    body: JSON.stringify({
+                        ref: 'main',
+                        inputs: inputs
+                    })
+                });
+
+                if (response.ok || response.status === 204) {
+                    btn.innerText = 'SIRAYA ALINDI!';
+                    btn.classList.replace('bg-blue-500', 'bg-green-600');
+                    alert('Başarılı! GitHub çeviri işlemini başlattı. 2-3 dakika içinde sayfa yenilendiğinde içerik Türkçe olarak arşivinizde görünecek.');
+                } else {
+                    const error = await response.json();
+                    throw new Error(error.message);
+                }
+            } catch (e) {
+                console.error(e);
+                alert('Hata: GitHub Action tetiklenemedi. Lütfen Token ve Repo ismini kontrol edin.');
+                btn.innerText = 'HATA!';
+                btn.disabled = false;
+            }
+        }
+
+        function filterType(type) {
+            currentFilter = type;
+            ['ALL', 'ANIME', 'MANGA'].forEach(t => {
+                const btn = document.getElementById(`btn-${t}`);
+                if (t === type) {
+                    btn.classList.add('bg-blue-500', 'text-white');
+                    btn.classList.remove('hover:text-white');
+                } else {
+                    btn.classList.remove('bg-blue-500', 'text-white');
+                    btn.classList.add('hover:text-white');
+                }
+            });
+            render();
+        }
+
+        function render() {
+            if (currentMode !== 'ARCHIVE') return;
+            const grid = document.getElementById('grid');
+            const loading = document.getElementById('loading');
+            loading.style.display = 'none';
+            grid.innerHTML = '';
+
+            let filtered = allData.filter(item => {
+                const matchesType = currentFilter === 'ALL' || item.type === currentFilter;
+                const matchesSearch = !searchQuery || 
+                    item.title_tr.toLowerCase().includes(searchQuery) || 
+                    item.title_original.toLowerCase().includes(searchQuery) ||
+                    item.id.toString().includes(searchQuery) ||
+                    (item.genres && item.genres.some(g => g.toLowerCase().includes(searchQuery)));
+                return matchesType && matchesSearch;
+            });
+
+            filtered.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'anime-card group cursor-pointer';
+                card.onclick = () => showDetails(item.filename);
+                card.innerHTML = `
+                    <div class="relative aspect-[2/3] rounded-xl overflow-hidden shadow-lg bg-[#0b1622]">
+                        <img src="${item.cover_image}" class="w-full h-full object-cover" alt="${item.title_tr}" loading="lazy">
+                        <div class="overlay absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent opacity-0 transition-opacity duration-300 p-4 flex flex-col justify-end">
+                            <div class="flex flex-wrap gap-1 mb-2">
+                                <span class="px-2 py-0.5 bg-blue-500 text-[10px] font-bold text-white rounded">${item.format}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <h3 class="text-sm font-bold text-white line-clamp-2 leading-snug group-hover:text-blue-400 transition-colors">${item.title_tr}</h3>
+                        <p class="text-[11px] text-gray-500 mt-1 truncate">${item.title_original}</p>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+
+            if (filtered.length === 0 && allData.length > 0) {
+                grid.innerHTML = `
+                    <div class="col-span-full py-20 text-center">
+                        <p class="text-gray-500 text-lg">Aradığınız kriterlere uygun içerik bulunamadı.</p>
+                    </div>
+                `;
+            }
+        }
+
         async function showDetails(filename) {
             const modal = document.getElementById('modal');
             const content = document.getElementById('modal-content');
             modal.classList.remove('hidden');
-            content.innerHTML = '<div class="text-center p-10">Yükleniyor...</div>';
+            document.body.style.overflow = 'hidden';
+            content.innerHTML = '<div class="flex items-center justify-center min-h-[400px]"><div class="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div></div>';
 
             try {
                 const response = await fetch(`data/${filename}`);
                 const data = await response.json();
 
                 content.innerHTML = `
-                    <div class="md:flex gap-8">
-                        <div class="md:w-1/3">
-                            <img src="${data.cover_image}" class="w-full rounded-lg shadow-xl" alt="${data.title_english}">
-                            ${data.trailer_link ? `
-                                <a href="${data.trailer_link}" target="_blank" class="btn block text-center mt-4">Fragmanı İzle</a>
-                            ` : ''}
-                        </div>
-                        <div class="md:w-2/3">
-                            <h2 class="text-3xl font-bold text-white mb-2">${data.title_english || data.title_romaji}</h2>
-                            <p class="text-blue-400 mb-4">${data.title_native}</p>
-                            
-                            <div class="flex flex-wrap gap-2 mb-6">
-                                ${data.genres.map(g => `<span class="bg-[#0b1622] px-3 py-1 rounded-full text-xs">${g}</span>`).join('')}
+                    <div class="relative h-64 md:h-80 w-full">
+                        <img src="${data.banner_image || data.cover_image}" class="w-full h-full object-cover" alt="Banner">
+                        <div class="absolute inset-0 bg-gradient-to-t from-[#151f2e] to-transparent"></div>
+                    </div>
+                    
+                    <div class="px-6 pb-12 md:px-12 -mt-20 relative">
+                        <div class="flex flex-col md:flex-row gap-8">
+                            <div class="w-48 md:w-64 flex-shrink-0 mx-auto md:mx-0">
+                                <img src="${data.cover_image}" class="w-full rounded-xl shadow-2xl border-4 border-[#151f2e]" alt="Cover">
+                                ${data.trailer_link ? `
+                                    <a href="${data.trailer_link}" target="_blank" class="mt-4 flex items-center justify-center gap-2 w-full py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-red-600/20">
+                                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"/></svg>
+                                        Fragman
+                                    </a>
+                                ` : ''}
+                                <a href="https://anilist.co/${data.type.toLowerCase()}/${data.id}" target="_blank" class="mt-3 flex items-center justify-center gap-2 w-full py-3 bg-[#0b1622] hover:bg-black text-white rounded-xl font-bold transition-all border border-gray-800">
+                                    AniList Sayfası
+                                </a>
                             </div>
 
-                            <div class="bg-[#0b1622] p-4 rounded mb-6">
-                                <h4 class="text-white font-bold mb-2">Türkçe Açıklama</h4>
-                                <p class="text-sm leading-relaxed">${data.description_tr || 'Açıklama çevrilemedi.'}</p>
-                            </div>
+                            <div class="flex-grow pt-4">
+                                <div class="flex flex-wrap items-center gap-3 mb-2">
+                                    <span class="px-3 py-1 bg-blue-500/10 text-blue-400 text-xs font-bold rounded-full border border-blue-500/20">${data.type}</span>
+                                    <span class="px-3 py-1 bg-green-500/10 text-green-400 text-xs font-bold rounded-full border border-green-500/20">${data.status}</span>
+                                    <span class="px-3 py-1 bg-yellow-500/10 text-yellow-400 text-xs font-bold rounded-full border border-yellow-500/20">★ ${data.average_score}%</span>
+                                </div>
+                                
+                                <h2 class="text-3xl md:text-4xl font-black text-white leading-tight mb-2">${data.title_tr}</h2>
+                                <p class="text-lg text-gray-400 font-medium mb-1">${data.title_english || data.title_romaji}</p>
+                                <p class="text-sm text-gray-500 font-mono italic mb-6">${data.title_native}</p>
 
-                            <div class="grid grid-cols-2 gap-4 text-sm">
-                                <div><span class="text-white font-semibold">Tür:</span> ${data.type}</div>
-                                <div><span class="text-white font-semibold">Format:</span> ${data.format}</div>
-                                <div><span class="text-white font-semibold">Durum:</span> ${data.status}</div>
-                                <div><span class="text-white font-semibold">Puan:</span> ${data.average_score}%</div>
-                                ${data.episodes ? `<div><span class="text-white font-semibold">Bölüm:</span> ${data.episodes}</div>` : ''}
-                                ${data.chapters ? `<div><span class="text-white font-semibold">Bölüm (Manga):</span> ${data.chapters}</div>` : ''}
-                            </div>
-                            
-                            <div class="mt-8">
-                                <a href="https://anilist.co/${data.type.toLowerCase()}/${data.id}" target="_blank" class="text-blue-400 hover:underline">AniList'te Görüntüle &rarr;</a>
+                                <div class="flex flex-wrap gap-2 mb-8">
+                                    ${data.genres.map(g => `<span class="px-3 py-1 bg-gray-800/50 text-xs text-gray-300 rounded-lg hover:bg-gray-700 transition-colors cursor-default">${g}</span>`).join('')}
+                                </div>
+
+                                <div class="prose prose-invert max-w-none">
+                                    <h4 class="text-white font-bold mb-3 flex items-center gap-2">
+                                        <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0116 0z" /></svg>
+                                        Türkçe Özet
+                                    </h4>
+                                    <div class="bg-[#0b1622]/50 p-6 rounded-2xl border border-gray-800 text-gray-300 leading-relaxed text-sm">
+                                        ${data.description_tr || 'Açıklama çevrilemedi.'}
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 `;
             } catch (error) {
-                content.innerHTML = '<div class="text-center p-10">Hata oluştu.</div>';
+                content.innerHTML = '<div class="text-center p-20 text-red-500 font-bold">İçerik yüklenirken bir hata oluştu.</div>';
             }
         }
 
         function closeModal() {
             document.getElementById('modal').classList.add('hidden');
+            document.body.style.overflow = 'auto';
         }
 
-        // Close modal on click outside
-        window.onclick = function(event) {
-            const modal = document.getElementById('modal');
-            if (event.target == modal) {
-                closeModal();
-            }
+        window.onclick = (e) => { 
+            if (e.target.id === 'modal') closeModal(); 
+            if (e.target.id === 'settingsModal') toggleSettings();
         }
 
         init();
